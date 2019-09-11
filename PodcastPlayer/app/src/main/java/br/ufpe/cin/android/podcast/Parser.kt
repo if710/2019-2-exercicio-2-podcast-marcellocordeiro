@@ -8,43 +8,6 @@ import java.io.StringReader
 
 object Parser {
 
-    //Se quiser, teste primeiro com o parser simples para exibir lista de titulos - sem informacao de link
-    @Throws(XmlPullParserException::class, IOException::class)
-    fun parserSimples(rssFeed: String): List<String> {
-        // pegando instancia da XmlPullParserFactory [singleton]
-        val factory = XmlPullParserFactory.newInstance()
-        // criando novo objeto do tipo XmlPullParser
-        val parser = factory.newPullParser()
-        // Definindo a entrada do nosso parser - argumento passado como parametro
-        parser.setInput(StringReader(rssFeed))
-        // Definindo retorno
-        val items = ArrayList<String>()
-
-        while (parser.next() != XmlPullParser.END_DOCUMENT) {
-            if (parser.eventType == XmlPullParser.START_TAG) {
-                val tag = parser.name
-                //delimitando que estamos apenas interessados em tags <item>
-                if (tag == "item") {
-                    var title = ""
-                    while (parser.next() != XmlPullParser.END_TAG) {
-                        if (parser.eventType == XmlPullParser.START_TAG) {
-                            val tagAberta = parser.name
-                            //pegando as tags <title>
-                            if (tagAberta == "title") {
-                                title = parser.nextText()
-                                items.add(title)
-                            } else {
-                                parser.next()
-                            }
-                            parser.nextTag()
-                        }
-                    }
-                }
-            }
-        }
-        return items
-    }
-
     //Este metodo faz o parsing de RSS gerando objetos ItemFeed
     @Throws(XmlPullParserException::class, IOException::class)
     fun parse(rssFeed: String): List<ItemFeed> {
@@ -97,6 +60,7 @@ object Parser {
         var link: String? = null
         var pubDate: String? = null
         var description: String? = null
+        var downloadLink: String? = null
         parser.require(XmlPullParser.START_TAG, null, "item")
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.eventType != XmlPullParser.START_TAG) {
@@ -107,10 +71,21 @@ object Parser {
                 "link" -> link = readData(parser, "link")
                 "pubDate" -> pubDate = readData(parser, "pubDate")
                 "description" -> description = readData(parser, "description")
+                "enclosure" -> downloadLink = readAttribute(parser, "enclosure", "url")
                 else -> skip(parser)
             }
         }
-        return ItemFeed(title!!, link!!, pubDate!!, description!!, "carregar o link")
+        return ItemFeed(title!!, link!!, pubDate!!, description!!, downloadLink!!)
+    }
+
+    // Processa atributos de forma parametrizada no feed.
+    @Throws(IOException::class, XmlPullParserException::class)
+    fun readAttribute(parser: XmlPullParser, tag: String, attribute: String): String {
+        parser.require(XmlPullParser.START_TAG, null, tag)
+        val data = parser.getAttributeValue(null, attribute)
+        parser.nextTag()
+        parser.require(XmlPullParser.END_TAG, null, tag)
+        return data
     }
 
     // Processa tags de forma parametrizada no feed.

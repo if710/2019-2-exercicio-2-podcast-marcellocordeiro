@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">PodcastPlayer</string>
-    <string name="action_download">Download</string>
+    <string name="action_download">↓</string>
     <string name="using_cached_db_warning">No internet connection, using previously downloaded database.</string>
 </resources>

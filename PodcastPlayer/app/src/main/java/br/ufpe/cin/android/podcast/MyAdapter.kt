@@ -1,10 +1,15 @@
 package br.ufpe.cin.android.podcast
 
+import android.content.Intent
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.itemlista.view.*
+import org.jetbrains.anko.sdk27.coroutines.onClick
 
 class MyAdapter(private val myDataset: List<ItemFeed>): RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
 
@@ -16,8 +21,38 @@ class MyAdapter(private val myDataset: List<ItemFeed>): RecyclerView.Adapter<MyA
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-        holder.view.item_title.text = myDataset[position].title
-        holder.view.item_date.text = myDataset[position].pubDate
+        holder.view.apply {
+            item_title.apply {
+                text = myDataset[position].title
+                onClick {
+                    val i = Intent(context, EpisodeDetailActivity::class.java).apply {
+                        putExtra("item_details", myDataset[position])
+                    }
+
+                    startActivity(context, i, null)
+                }
+            }
+
+            item_date.apply {
+                text = myDataset[position].pubDate
+            }
+
+            item_action.apply {
+                onClick {
+                    try {
+                        val i = Intent(Intent.ACTION_VIEW)
+                        i.data = Uri.parse(myDataset[position].downloadLink)
+                        startActivity(context, i, null)
+                    } catch (e: Exception) {
+                        Snackbar.make(
+                            holder.view,
+                            e.message ?: e.toString(),
+                            Snackbar.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun getItemCount() = myDataset.size
