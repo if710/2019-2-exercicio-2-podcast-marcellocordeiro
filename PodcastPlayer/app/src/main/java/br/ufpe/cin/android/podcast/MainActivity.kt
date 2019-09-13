@@ -48,22 +48,24 @@ class MainActivity : AppCompatActivity() {
                     db.itemFeedDAO().getAll()
                 }
 
-                val img =
-                    URL("https://ssl-static.libsyn.com/p/assets/2/0/e/5/20e599a280c70f15/ffu-khu.jpg").readBytes()
-                val bmp = BitmapFactory.decodeByteArray(img, 0, img.size)
+                if (activeNetwork != null) {
+                    val img =
+                        URL("https://ssl-static.libsyn.com/p/assets/2/0/e/5/20e599a280c70f15/ffu-khu.jpg").readBytes()
+                    val bmp = BitmapFactory.decodeByteArray(img, 0, img.size)
 
+                    uiThread {
+                        app_bar_image.setImageBitmap(bmp)
+                        app_bar.setExpanded(false, false)
+                        app_bar_image.visibility = View.VISIBLE
+                        app_bar.setExpanded(true, true)
+                    }
+                }
 
                 // TODO: do this more efficiently
                 db.itemFeedDAO().insertAll(*feedData.toTypedArray())
 
                 uiThread {
                     progressBar.visibility = View.GONE
-
-                    app_bar_image.setImageBitmap(bmp)
-                    app_bar.setExpanded(false, false)
-                    app_bar_image.visibility = View.VISIBLE
-                    app_bar.setExpanded(true, true)
-
 
                     feed.apply {
                         //setHasFixedSize(true)
