@@ -7,7 +7,7 @@ interface ItemFeedDAO {
     @Query("SELECT * FROM ItemFeed")
     fun getAll(): List<ItemFeed>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertAll(vararg entries: ItemFeed)
 
     @Delete

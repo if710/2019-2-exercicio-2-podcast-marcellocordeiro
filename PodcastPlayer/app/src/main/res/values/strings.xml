@@ -2,4 +2,6 @@
     <string name="app_name">PodcastPlayer</string>
     <string name="action_download">↓</string>
     <string name="using_cached_db_warning">No internet connection, using previously downloaded database.</string>
+    <string name="channel_banner">Channel banner</string>
+    <string name="download_button">Download button</string>
 </resources>

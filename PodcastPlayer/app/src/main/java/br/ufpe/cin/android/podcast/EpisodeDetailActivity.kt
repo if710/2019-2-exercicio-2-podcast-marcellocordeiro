@@ -2,6 +2,7 @@ package br.ufpe.cin.android.podcast
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.text.HtmlCompat
 import kotlinx.android.synthetic.main.activity_episode_detail.*
 
 class EpisodeDetailActivity : AppCompatActivity() {
@@ -14,6 +15,8 @@ class EpisodeDetailActivity : AppCompatActivity() {
 
         if (itemDetails != null) {
             episode_title.text = itemDetails.title
+            episode_description.text =
+                HtmlCompat.fromHtml(itemDetails.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
             episode_link.text = itemDetails.link
         }
     }
