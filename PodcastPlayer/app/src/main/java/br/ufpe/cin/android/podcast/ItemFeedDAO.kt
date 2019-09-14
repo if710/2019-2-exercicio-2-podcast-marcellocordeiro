@@ -4,6 +4,7 @@ import androidx.room.*
 
 @Dao
 interface ItemFeedDAO {
+
     @Query("SELECT * FROM ItemFeed")
     fun getAll(): List<ItemFeed>
 
