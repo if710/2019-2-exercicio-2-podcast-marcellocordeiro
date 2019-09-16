@@ -12,7 +12,8 @@ data class ItemFeed(
     @ColumnInfo val link: String,
     @ColumnInfo val pubDate: String,
     @ColumnInfo val description: String,
-    @ColumnInfo val downloadLink: String) : Parcelable {
+    @ColumnInfo val downloadLink: String
+) : Parcelable {
 
     constructor(parcel: Parcel) : this(
         parcel.readString()!!,
