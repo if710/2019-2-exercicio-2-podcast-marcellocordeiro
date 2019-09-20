@@ -18,11 +18,6 @@ import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
-    // Hardcoded download links for the feed and banner
-    private val rssLink = "https://ffkhunion.libsyn.com/rss"
-    private val bannerLink =
-        "https://ssl-static.libsyn.com/p/assets/2/0/e/5/20e599a280c70f15/ffu-khu.jpg"
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -32,35 +27,72 @@ class MainActivity : AppCompatActivity() {
         toolbar_layout.title = getString(R.string.app_name)
         toolbar_layout.setExpandedTitleColor(0)
 
-        setPodcastFeed()
+        // Hardcoded download links for the feed
+        val rssLink = "https://ffkhunion.libsyn.com/rss"
+
+        setPodcastFeed(rssLink)
     }
 
-    private fun setPodcastFeed() {
+    private fun setPodcastFeed(rssLink: String) {
+        val preferences = getPreferences(Context.MODE_PRIVATE)
         val db = AppDatabase.getInstance(this)
 
         doAsync {
             try {
-                // Downloads the list of episodes and the channel's banner
-                val (feedData, bmp) = if (isConnected()) {
+                // Downloads the list of episodes, the feed title and the feed banner
+                val (feedData, title, img) = if (isConnected()) {
                     val rss = URL(rssLink).readText()
-                    val img = Picasso.get().load(bannerLink)
+                    val (title, imageLink) = Parser.parseInfo(rss)
 
-                    Pair(Parser.parse(rss), img)
+                    val img = if (imageLink != null) {
+                        Picasso.get().load(imageLink)
+                    } else {
+                        null
+                    }
+
+                    // Saves old title and image link
+                    val editor = preferences.edit()
+
+                    editor.putString("title", title ?: "")
+                    editor.putString("imageLink", imageLink ?: "")
+                    editor.apply()
+
+                    Triple(Parser.parse(rss), title, img)
                 } else {
-                    showSnackbar(
-                        window.decorView.rootView,
-                        getString(R.string.using_cached_db_warning)
-                    )
+                    val oldFeed = db.itemFeedDAO().getAll()
+
+                    if (oldFeed.isEmpty()) {
+                        showSnackbar(
+                            window.decorView.rootView,
+                            getString(R.string.no_cached_database_found)
+                        )
+                    } else {
+                        showSnackbar(
+                            window.decorView.rootView,
+                            getString(R.string.using_cached_db_warning)
+                        )
+                    }
+
+                    // Gets previously saved title and image link
+                    val title = preferences.getString("title", null)
+                    val imageLink = preferences.getString("imageLink", null)
+
+                    // Even if offline, the image should have been cached
+                    val img = if (imageLink != null) {
+                        Picasso.get().load(imageLink)
+                    } else {
+                        null
+                    }
 
                     // If something goes wrong, returns the existent feed list
-                    Pair(db.itemFeedDAO().getAll(), null)
+                    Triple(oldFeed, title, img)
                 }
 
                 // TODO: do this more efficiently
                 db.itemFeedDAO().insertAll(*feedData.toTypedArray())
 
                 uiThread {
-                    refreshFeed(it, feedData, bmp)
+                    refreshFeed(it, feedData, title, img)
                 }
             } catch (e: Exception) {
                 uiThread {
@@ -75,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun refreshFeed(context: Context, feedData: List<ItemFeed>, banner: RequestCreator?) {
+    private fun refreshFeed(context: Context, feedData: List<ItemFeed>, title: String?, banner: RequestCreator?) {
         progressBar.visibility = View.GONE
 
         // Shows the feed
@@ -101,6 +133,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             // TODO: fix this
             // app_bar_image.visibility = View.GONE
+        }
+
+        // If there is a title, sets it to the toolbar
+        if (title != null) {
+            toolbar_layout.title = title
         }
     }
 

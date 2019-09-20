@@ -60,6 +60,7 @@ object Parser {
         var link: String? = null
         var pubDate: String? = null
         var description: String? = null
+        var imageLink: String? = null
         var downloadLink: String? = null
         parser.require(XmlPullParser.START_TAG, null, "item")
         while (parser.next() != XmlPullParser.END_TAG) {
@@ -71,11 +72,12 @@ object Parser {
                 "link" -> link = readData(parser, "link")
                 "pubDate" -> pubDate = readData(parser, "pubDate")
                 "description" -> description = readData(parser, "description")
+                "itunes:image" -> imageLink = readAttribute(parser, "itunes:image", "href")
                 "enclosure" -> downloadLink = readAttribute(parser, "enclosure", "url")
                 else -> skip(parser)
             }
         }
-        return ItemFeed(title!!, link!!, pubDate!!, description!!, downloadLink!!)
+        return ItemFeed(title!!, link!!, pubDate!!, description!!, imageLink ?: "", downloadLink!!)
     }
 
     // Processa atributos de forma parametrizada no feed.
@@ -121,4 +123,64 @@ object Parser {
 
     /**/
 
+    //Este metodo faz o parsing do titulo e banner do RSS
+    @Throws(XmlPullParserException::class, IOException::class)
+    fun parseInfo(rssFeed: String): Pair<String?, String?> {
+        val factory = XmlPullParserFactory.newInstance()
+        val xpp = factory.newPullParser()
+        xpp.setInput(StringReader(rssFeed))
+        xpp.nextTag()
+        return readRssInfo(xpp)
+    }
+
+    @Throws(XmlPullParserException::class, IOException::class)
+    fun readRssInfo(parser: XmlPullParser): Pair<String?, String?> {
+        parser.require(XmlPullParser.START_TAG, null, "rss")
+        while (parser.next() != XmlPullParser.END_TAG) {
+            if (parser.eventType != XmlPullParser.START_TAG) {
+                continue
+            }
+            val name = parser.name
+            if (name == "channel") {
+                return readInfo(parser)
+            } else {
+                skip(parser)
+            }
+        }
+        return Pair(null, null)
+    }
+
+    @Throws(IOException::class, XmlPullParserException::class)
+    fun readInfo(parser: XmlPullParser): Pair<String?, String?> {
+        var rssTitle: String? = null
+        var rssImageLink: String? = null
+
+        parser.require(XmlPullParser.START_TAG, null, "channel")
+        while (parser.next() != XmlPullParser.END_TAG) {
+            if (parser.eventType != XmlPullParser.START_TAG) {
+                continue
+            }
+            when (parser.name) {
+                "title" -> rssTitle = readData(parser, "title")
+                "image" -> rssImageLink = readImage(parser)
+                else -> skip(parser)
+            }
+        }
+        return Pair(rssTitle, rssImageLink)
+    }
+
+    @Throws(XmlPullParserException::class, IOException::class)
+    fun readImage(parser: XmlPullParser): String? {
+        parser.require(XmlPullParser.START_TAG, null, "image")
+        while (parser.next() != XmlPullParser.END_TAG) {
+            if (parser.eventType != XmlPullParser.START_TAG) {
+                continue
+            }
+            when (parser.name) {
+                "url" -> return readData(parser, "url")
+                else -> skip(parser)
+            }
+        }
+        return null
+    }
 }
